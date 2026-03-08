@@ -87,6 +87,14 @@ const patientSchema = new mongoose.Schema(
             type: String,
             enum: ['active', 'inactive', 'deceased'],
             default: 'active'
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
+        verifiedAt: {
+            type: Date,
+            default: null
         }
     },
     {

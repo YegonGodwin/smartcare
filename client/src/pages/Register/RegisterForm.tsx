@@ -1,5 +1,5 @@
-﻿import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@hooks/index';
 import { Button, Input, Checkbox } from '@components/ui/index';
 import { MailIcon, KeyIcon, EyeIcon, EyeOffIcon, UserIcon, PhoneIcon } from '@components/layout/icons';
@@ -10,8 +10,8 @@ interface RegisterFormProps {
 }
 
 export function RegisterForm({ currentStep, setCurrentStep }: RegisterFormProps) {
-  const navigate = useNavigate();
   const { registerPatient, isLoading, error, clearError } = useAuth();
+  
   // Form state
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,6 +27,9 @@ export function RegisterForm({ currentStep, setCurrentStep }: RegisterFormProps)
   const [emergencyContactName, setEmergencyContactName] = useState('');
   const [emergencyContactRelationship, setEmergencyContactRelationship] = useState('');
   const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
+  
+  // Success state
+  const [registrationSuccess, setRegistrationSuccess] = useState<{ email: string } | null>(null);
 
   const totalSteps = 3;
 
@@ -57,26 +60,93 @@ export function RegisterForm({ currentStep, setCurrentStep }: RegisterFormProps)
       return;
     }
 
-    await registerPatient({
-      firstName,
-      lastName,
-      email,
-      phone,
-      password,
-      gender,
-      dateOfBirth,
-      address,
-      emergencyContact: {
-        name: emergencyContactName,
-        relationship: emergencyContactRelationship,
-        phone: emergencyContactPhone,
-      },
-    });
+    try {
+      const result = await registerPatient({
+        firstName,
+        lastName,
+        email,
+        phone,
+        password,
+        gender,
+        dateOfBirth,
+        address,
+        emergencyContact: {
+          name: emergencyContactName,
+          relationship: emergencyContactRelationship,
+          phone: emergencyContactPhone,
+        },
+      });
 
-    navigate('/patient/dashboard');
+      if (result.requiresApproval) {
+        setRegistrationSuccess({ email });
+      }
+    } catch (_submitError) {
+      // Error is already handled by auth context
+    }
   };
 
   const progressPercentage = (currentStep / totalSteps) * 100;
+
+  // Success screen
+  if (registrationSuccess) {
+    return (
+      <div className="w-full bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-900/10 border border-slate-200/50 overflow-hidden p-10">
+        <div className="text-center">
+          {/* Success Icon */}
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/30">
+            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <h2 className="text-3xl font-bold text-slate-900 mb-3">
+            Registration Submitted!
+          </h2>
+          
+          <p className="text-slate-600 mb-6 max-w-md mx-auto">
+            Your account has been created successfully and is pending admin approval.
+          </p>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8">
+            <div className="flex gap-3">
+              <svg className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-amber-900 mb-1">
+                  Account Pending Approval
+                </p>
+                <p className="text-xs text-amber-700">
+                  Our admin team will review your registration within 24-48 hours. 
+                  Once approved, you'll be able to log in with your email{' '}
+                  <span className="font-semibold">{registrationSuccess.email}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Link
+              to="/login"
+              className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-600/30 hover:-translate-y-0.5"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              Go to Login
+            </Link>
+            
+            <p className="text-xs text-slate-500">
+              Need help? Contact our support team at{' '}
+              <a href="mailto:support@smartcare.local" className="text-emerald-600 hover:underline">
+                support@smartcare.local
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-900/10 border border-slate-200/50 overflow-hidden">
@@ -430,7 +500,7 @@ export function RegisterForm({ currentStep, setCurrentStep }: RegisterFormProps)
                 disabled={!acceptedTerms}
                 isLoading={isLoading}
               >
-                Create Account
+                Submit Registration
                 <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>

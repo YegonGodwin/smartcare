@@ -396,7 +396,8 @@ const main = async () => {
             email: 'admin@smartcare.local',
             phone: '+254700000001',
             password: 'Admin123!',
-            role: 'admin'
+            role: 'admin',
+            isApproved: true
         },
         {
             firstName: 'Rachel',
@@ -405,7 +406,8 @@ const main = async () => {
             phone: '+254700000002',
             password: 'Reception123!',
             role: 'receptionist',
-            department: departmentMap.OPS._id
+            department: departmentMap.OPS._id,
+            isApproved: true
         },
         {
             firstName: 'Anne',
@@ -415,7 +417,8 @@ const main = async () => {
             password: 'Doctor123!',
             role: 'doctor',
             department: departmentMap.OPS._id,
-            doctorProfile: doctorMap['anne.njeri@smartcare.local']._id
+            doctorProfile: doctorMap['anne.njeri@smartcare.local']._id,
+            isApproved: true
         },
         {
             firstName: 'Kevin',
@@ -425,7 +428,8 @@ const main = async () => {
             password: 'Doctor123!',
             role: 'doctor',
             department: departmentMap.PED._id,
-            doctorProfile: doctorMap['kevin.kamau@smartcare.local']._id
+            doctorProfile: doctorMap['kevin.kamau@smartcare.local']._id,
+            isApproved: true
         },
         {
             firstName: patients[0].firstName,
@@ -434,9 +438,13 @@ const main = async () => {
             phone: patients[0].phone,
             password: 'Patient123!',
             role: 'patient',
-            patientProfile: patients[0]._id
+            patientProfile: patients[0]._id,
+            isApproved: true
         }
     ]);
+
+    // Update patient profile to verified
+    await Patient.findByIdAndUpdate(patients[0]._id, { isVerified: true, verifiedAt: new Date() });
 
     console.log('Seed completed successfully.');
     console.log(`Departments: ${departments.length}`);

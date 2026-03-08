@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { apiRequest, ApiError } from '../api/client';
 import { STORAGE_KEYS } from '../constants';
-import type { AuthResponse, AuthState, User } from '../model';
+import type { AuthResponse, AuthState, User, PendingPatient } from '../model';
 
 interface PatientRegistrationPayload {
   firstName: string;
@@ -25,11 +25,24 @@ interface PatientRegistrationPayload {
   };
 }
 
+interface PendingPatientsResponse {
+  users: PendingPatient[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<User>;
-  registerPatient: (payload: PatientRegistrationPayload) => Promise<User>;
+  registerPatient: (payload: PatientRegistrationPayload) => Promise<{ user: User; requiresApproval: boolean }>;
   logout: () => void;
   clearError: () => void;
+  getPendingPatients: () => Promise<PendingPatientsResponse>;
+  approvePatient: (id: string, approvalNote?: string) => Promise<User>;
+  rejectPatient: (id: string, reason?: string) => Promise<User>;
 }
 
 const initialAuthState: AuthState = {
@@ -112,22 +125,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await apiRequest<{ data: AuthResponse }>('/auth/patient-register', {
+      const response = await apiRequest<{ data: { user: User; message: string } }>('/auth/patient-register', {
         method: 'POST',
         auth: false,
         body: JSON.stringify(payload),
       });
 
-      persistSession(response.data);
-
-      setAuthState({
-        user: response.data.user,
-        isAuthenticated: true,
+      setAuthState((prev) => ({
+        ...prev,
         isLoading: false,
         error: null,
-      });
+      }));
 
-      return response.data.user;
+      return {
+        user: response.data.user,
+        requiresApproval: !response.data.user.isApproved,
+      };
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Registration failed';
       setAuthState((prev) => ({
@@ -137,6 +150,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }));
       throw error;
     }
+  };
+
+  const getPendingPatients = async () => {
+    const response = await apiRequest<{ data: PendingPatientsResponse }>('/auth/patients/pending');
+    return response.data;
+  };
+
+  const approvePatient = async (id: string, approvalNote?: string) => {
+    const response = await apiRequest<{ data: { user: User } }>(`/auth/patients/${id}/approve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ approvalNote }),
+    });
+    return response.data.user;
+  };
+
+  const rejectPatient = async (id: string, reason?: string) => {
+    const response = await apiRequest<{ data: { user: User } }>(`/auth/patients/${id}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    });
+    return response.data.user;
   };
 
   const logout = () => {
@@ -161,6 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerPatient,
         logout,
         clearError,
+        getPendingPatients,
+        approvePatient,
+        rejectPatient,
       }}
     >
       {children}

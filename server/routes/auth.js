@@ -1,6 +1,6 @@
 import express from 'express';
-import { body } from 'express-validator';
-import { bootstrapAdmin, login, registerUser, registerPatient, getCurrentUser } from '../controllers/authController.js';
+import { body, param } from 'express-validator';
+import { bootstrapAdmin, login, registerUser, registerPatient, getCurrentUser, getPendingPatients, approvePatient, rejectPatient } from '../controllers/authController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import validateRequest from '../middleware/validateRequest.js';
 
@@ -29,6 +29,18 @@ router.post('/patient-register', [
     body('emergencyContact.phone').trim().notEmpty().withMessage('Emergency contact phone is required')
 ], validateRequest, registerPatient);
 router.get('/me', protect, getCurrentUser);
+
+// Admin-only routes for patient approval
+router.get('/patients/pending', protect, authorize('admin'), getPendingPatients);
+router.patch('/patients/:id/approve', protect, authorize('admin'), [
+    param('id').isMongoId().withMessage('Invalid patient ID'),
+    body('approvalNote').optional({ values: 'falsy' }).trim()
+], validateRequest, approvePatient);
+router.patch('/patients/:id/reject', protect, authorize('admin'), [
+    param('id').isMongoId().withMessage('Invalid patient ID'),
+    body('reason').optional({ values: 'falsy' }).trim()
+], validateRequest, rejectPatient);
+
 router.post('/register', [
     ...baseUserValidation,
     body('role').isIn(['admin', 'doctor', 'receptionist', 'patient']).withMessage('Valid role is required'),

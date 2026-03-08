@@ -24,6 +24,16 @@ const menuItems = [
   {
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    label: 'Approvals',
+    path: '/admin/approvals',
+    badge: true,
+  },
+  {
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
@@ -79,6 +89,11 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             >
               {item.icon}
               <span>{item.label}</span>
+              {item.badge && (
+                <span className="ml-auto px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded-full">
+                  !
+                </span>
+              )}
             </Link>
           );
         })}

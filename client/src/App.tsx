@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage, RegisterPage } from '@pages/index';
 import {
   AdminDashboardPage as DashboardPage,
@@ -6,6 +6,7 @@ import {
   AdminPatientsPage,
   AdminAppointmentsPage,
 } from '@pages/Admin';
+import { PatientApprovalsPage } from '@pages/Admin/PatientApprovalsPage';
 import {
   PatientDashboardPage,
   PatientAppointmentsPage,
@@ -34,6 +35,7 @@ function App() {
             <Route path="/admin/dashboard" element={<DashboardPage />} />
             <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
             <Route path="/admin/patients" element={<AdminPatientsPage />} />
+            <Route path="/admin/approvals" element={<PatientApprovalsPage />} />
             <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['patient']} />}>

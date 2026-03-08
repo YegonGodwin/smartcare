@@ -22,6 +22,11 @@ export const protect = asyncHandler(async (req, _res, next) => {
         throw new ApiError(403, 'This account is inactive');
     }
 
+    // Check approval status for patient users
+    if (user.role === 'patient' && !user.isApproved) {
+        throw new ApiError(403, 'Your account is pending admin approval. Please wait for approval before accessing the system.');
+    }
+
     req.user = user;
     next();
 });

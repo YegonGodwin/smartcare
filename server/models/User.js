@@ -55,6 +55,24 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: true
         },
+        isApproved: {
+            type: Boolean,
+            default: false
+        },
+        approvalNote: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        approvedAt: {
+            type: Date,
+            default: null
+        },
+        approvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
         lastLoginAt: {
             type: Date,
             default: null
@@ -89,6 +107,9 @@ userSchema.methods.toSafeObject = function toSafeObject() {
         doctorProfile: this.doctorProfile,
         patientProfile: this.patientProfile,
         isActive: this.isActive,
+        isApproved: this.isApproved,
+        approvalNote: this.approvalNote,
+        approvedAt: this.approvedAt,
         lastLoginAt: this.lastLoginAt,
         createdAt: this.createdAt,
         updatedAt: this.updatedAt

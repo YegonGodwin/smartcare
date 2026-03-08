@@ -72,13 +72,25 @@ export const getMedicalRecordById = asyncHandler(async (req, res) => {
 });
 
 export const createMedicalRecord = asyncHandler(async (req, res) => {
-    const record = await MedicalRecord.create(req.body);
+    const payload = { ...req.body };
+
+    if (req.user?.role === 'doctor') {
+        payload.doctor = req.user.doctorProfile?._id || req.user.doctorProfile;
+    }
+
+    const record = await MedicalRecord.create(payload);
     const populatedRecord = await MedicalRecord.findById(record._id).populate(medicalRecordPopulation);
     sendSuccess(res, 201, 'Medical record created successfully', populatedRecord);
 });
 
 export const updateMedicalRecord = asyncHandler(async (req, res) => {
-    const record = await MedicalRecord.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = { ...req.body };
+
+    if (req.user?.role === 'doctor') {
+        payload.doctor = req.user.doctorProfile?._id || req.user.doctorProfile;
+    }
+
+    const record = await MedicalRecord.findByIdAndUpdate(req.params.id, payload, {
         new: true,
         runValidators: true
     }).populate(medicalRecordPopulation);

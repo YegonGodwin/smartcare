@@ -36,9 +36,9 @@ interface AppointmentItem {
   type: string;
   reason: string;
   status: string;
-  patient?: { firstName?: string; lastName?: string } | null;
-  doctor?: { firstName?: string; lastName?: string } | null;
-  department?: { name?: string } | null;
+  patient?: { _id?: string; firstName?: string; lastName?: string } | null;
+  doctor?: { _id?: string; firstName?: string; lastName?: string } | null;
+  department?: { _id?: string; name?: string } | null;
 }
 
 const initialForm = {
@@ -57,6 +57,7 @@ export function AdminAppointmentsPage() {
   const [doctors, setDoctors] = useState<SimpleDoctor[]>([]);
   const [departments, setDepartments] = useState<SimpleDepartment[]>([]);
   const [form, setForm] = useState(initialForm);
+  const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,18 +107,50 @@ export function AdminAppointmentsPage() {
     setSuccess(null);
 
     try {
-      await apiRequest('/appointments', {
-        method: 'POST',
+      await apiRequest(editingAppointmentId ? `/appointments/${editingAppointmentId}` : '/appointments', {
+        method: editingAppointmentId ? 'PUT' : 'POST',
         body: JSON.stringify(form),
       });
 
       setForm(initialForm);
-      setSuccess('Appointment created successfully.');
+      setEditingAppointmentId(null);
+      setSuccess(editingAppointmentId ? 'Appointment updated successfully.' : 'Appointment created successfully.');
       await loadData();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to create appointment');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = (appointment: AppointmentItem) => {
+    setEditingAppointmentId(appointment._id);
+    setSuccess(null);
+    setError(null);
+    setForm({
+      patient: appointment.patient?._id || '',
+      doctor: appointment.doctor?._id || '',
+      department: appointment.department?._id || '',
+      scheduledFor: appointment.scheduledFor ? new Date(appointment.scheduledFor).toISOString().slice(0, 16) : '',
+      reason: appointment.reason,
+      type: appointment.type,
+    });
+  };
+
+  const handleDelete = async (appointmentId: string) => {
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await apiRequest(`/appointments/${appointmentId}`, { method: 'DELETE' });
+      if (editingAppointmentId === appointmentId) {
+        setEditingAppointmentId(null);
+        setForm(initialForm);
+      }
+      setSuccess('Appointment cancelled successfully.');
+      await loadData();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to cancel appointment');
     }
   };
 
@@ -135,7 +168,9 @@ export function AdminAppointmentsPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <section className="xl:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                <h2 className="text-xl font-bold text-slate-900 mb-6">Book Appointment</h2>
+                <h2 className="text-xl font-bold text-slate-900 mb-6">
+                  {editingAppointmentId ? 'Reschedule Appointment' : 'Book Appointment'}
+                </h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Patient</label>
@@ -217,8 +252,23 @@ export function AdminAppointmentsPage() {
                   {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>}
 
                   <Button type="submit" className="w-full" isLoading={isSubmitting}>
-                    Create Appointment
+                    {editingAppointmentId ? 'Save Changes' : 'Create Appointment'}
                   </Button>
+                  {editingAppointmentId && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => {
+                        setEditingAppointmentId(null);
+                        setForm(initialForm);
+                        setError(null);
+                        setSuccess(null);
+                      }}
+                    >
+                      Cancel Edit
+                    </Button>
+                  )}
                 </form>
               </section>
 
@@ -236,6 +286,7 @@ export function AdminAppointmentsPage() {
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Doctor</th>
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">When</th>
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -264,6 +315,16 @@ export function AdminAppointmentsPage() {
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 capitalize">
                               {appointment.status}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button type="button" size="sm" variant="secondary" onClick={() => handleEdit(appointment)}>
+                                Edit
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" onClick={() => handleDelete(appointment._id)}>
+                                Cancel
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}

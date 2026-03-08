@@ -51,6 +51,11 @@ export const login = asyncHandler(async (req, res) => {
         throw new ApiError(403, 'This account is inactive');
     }
 
+    // Check approval status for patient users
+    if (user.role === 'patient' && !user.isApproved) {
+        throw new ApiError(403, 'Your account is pending admin approval. Please contact the administrator.');
+    }
+
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
 
@@ -99,7 +104,8 @@ export const registerPatient = asyncHandler(async (req, res) => {
         dateOfBirth,
         address,
         gender,
-        emergencyContact
+        emergencyContact,
+        isVerified: false
     });
 
     const user = await User.create({
@@ -109,16 +115,98 @@ export const registerPatient = asyncHandler(async (req, res) => {
         phone,
         password,
         role: 'patient',
-        patientProfile: patient._id
+        patientProfile: patient._id,
+        isApproved: false
     });
 
-    const populatedUser = await User.findById(user._id).populate('patientProfile', 'patientNumber firstName lastName dateOfBirth gender phone email address');
+    const populatedUser = await User.findById(user._id).populate('patientProfile', 'patientNumber firstName lastName dateOfBirth gender phone email address isVerified');
 
-    sendSuccess(res, 201, 'Patient account created successfully', buildAuthResponse(populatedUser));
+    sendSuccess(res, 201, 'Patient registration submitted successfully. Your account is pending admin approval.', {
+        user: populatedUser.toSafeObject(),
+        message: 'Registration successful! Please wait for admin approval before accessing the system.'
+    });
 });
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
     sendSuccess(res, 200, 'Authenticated user retrieved successfully', {
         user: req.user.toSafeObject()
+    });
+});
+
+export const getPendingPatients = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+        User.find({ role: 'patient', isApproved: false })
+            .select('-password')
+            .populate('patientProfile', 'firstName lastName email phone dateOfBirth gender patientNumber isVerified')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        User.countDocuments({ role: 'patient', isApproved: false })
+    ]);
+
+    sendSuccess(res, 200, 'Pending patients retrieved successfully', {
+        users,
+        pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    });
+});
+
+export const approvePatient = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { approvalNote } = req.body;
+
+    const user = await User.findOne({ _id: id, role: 'patient' });
+
+    if (!user) {
+        throw new ApiError(404, 'Patient user not found');
+    }
+
+    if (user.isApproved) {
+        throw new ApiError(400, 'This patient is already approved');
+    }
+
+    user.isApproved = true;
+    user.approvalNote = approvalNote || '';
+    user.approvedAt = new Date();
+    user.approvedBy = req.user._id;
+    await user.save();
+
+    const populatedUser = await User.findById(user._id)
+        .populate('patientProfile', 'firstName lastName email phone patientNumber')
+        .populate('approvedBy', 'firstName lastName email');
+
+    sendSuccess(res, 200, 'Patient approved successfully', {
+        user: populatedUser.toSafeObject()
+    });
+});
+
+export const rejectPatient = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const user = await User.findOne({ _id: id, role: 'patient' });
+
+    if (!user) {
+        throw new ApiError(404, 'Patient user not found');
+    }
+
+    if (user.isApproved) {
+        throw new ApiError(400, 'This patient is already approved');
+    }
+
+    user.isActive = false;
+    user.approvalNote = reason || 'Registration rejected';
+    await user.save();
+
+    sendSuccess(res, 200, 'Patient registration rejected', {
+        user: user.toSafeObject()
     });
 });

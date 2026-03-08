@@ -23,6 +23,9 @@ export interface User {
     lastName?: string;
     specialization?: string;
   } | null;
+  isApproved?: boolean;
+  approvalNote?: string;
+  approvedAt?: string;
 }
 
 export interface LoginFormState {
@@ -42,4 +45,20 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+}
+
+export interface PendingPatient {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
+  patientProfile: {
+    patientNumber: string;
+    dateOfBirth: string;
+    isVerified: boolean;
+  };
+  isApproved: boolean;
+  createdAt: string;
 }
