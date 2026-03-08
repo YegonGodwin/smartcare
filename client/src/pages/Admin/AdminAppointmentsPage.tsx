@@ -41,6 +41,8 @@ interface AppointmentItem {
   department?: { _id?: string; name?: string } | null;
 }
 
+type AppointmentStatus = 'scheduled' | 'confirmed' | 'checked-in' | 'in-progress' | 'completed' | 'cancelled' | 'no-show';
+
 const initialForm = {
   patient: '',
   doctor: '',
@@ -138,20 +140,44 @@ export function AdminAppointmentsPage() {
   };
 
   const handleDelete = async (appointmentId: string) => {
-    setError(null);
-    setSuccess(null);
+    const note = window.prompt('Provide cancellation reason:');
+    if (note === null) {
+      return;
+    }
 
     try {
-      await apiRequest(`/appointments/${appointmentId}`, { method: 'DELETE' });
+      await handleStatusChange(appointmentId, 'cancelled', note);
       if (editingAppointmentId === appointmentId) {
         setEditingAppointmentId(null);
         setForm(initialForm);
       }
-      setSuccess('Appointment cancelled successfully.');
-      await loadData();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : 'Failed to cancel appointment');
     }
+  };
+
+  const handleStatusChange = async (appointmentId: string, status: AppointmentStatus, note?: string) => {
+    setError(null);
+    setSuccess(null);
+
+    await apiRequest(`/appointments/${appointmentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status,
+        note,
+      }),
+    });
+
+    setSuccess(`Appointment marked as ${status}.`);
+    await loadData();
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    if (status === 'completed') return 'bg-emerald-50 text-emerald-700';
+    if (status === 'cancelled' || status === 'no-show') return 'bg-red-50 text-red-700';
+    if (status === 'in-progress' || status === 'checked-in') return 'bg-amber-50 text-amber-700';
+    if (status === 'confirmed') return 'bg-indigo-50 text-indigo-700';
+    return 'bg-blue-50 text-blue-700';
   };
 
   return (
@@ -312,18 +338,30 @@ export function AdminAppointmentsPage() {
                             }).format(new Date(appointment.scheduledFor))}
                           </td>
                           <td className="px-6 py-4">
-                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 capitalize">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${getStatusBadgeClass(appointment.status)}`}>
                               {appointment.status}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button type="button" size="sm" variant="secondary" onClick={() => handleEdit(appointment)}>
-                                Edit
-                              </Button>
-                              <Button type="button" size="sm" variant="ghost" onClick={() => handleDelete(appointment._id)}>
-                                Cancel
-                              </Button>
+                              {(appointment.status === 'scheduled' || appointment.status === 'confirmed') && (
+                                <Button type="button" size="sm" variant="secondary" onClick={() => handleEdit(appointment)}>
+                                  Edit
+                                </Button>
+                              )}
+                              {appointment.status === 'scheduled' && (
+                                <Button type="button" size="sm" variant="outline" onClick={() => void handleStatusChange(appointment._id, 'confirmed')}>
+                                  Confirm
+                                </Button>
+                              )}
+                              {(appointment.status === 'scheduled' ||
+                                appointment.status === 'confirmed' ||
+                                appointment.status === 'checked-in' ||
+                                appointment.status === 'in-progress') && (
+                                <Button type="button" size="sm" variant="ghost" onClick={() => void handleDelete(appointment._id)}>
+                                  Cancel
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -5,7 +5,8 @@ import {
     getAppointmentById,
     createAppointment,
     updateAppointment,
-    deleteAppointment
+    deleteAppointment,
+    updateAppointmentStatus
 } from '../controllers/appointmentController.js';
 import validateRequest from '../middleware/validateRequest.js';
 import { protect, authorize } from '../middleware/auth.js';
@@ -20,11 +21,19 @@ const appointmentValidation = [
     body('reason').trim().notEmpty().withMessage('Reason is required')
 ];
 
+const appointmentStatusValidation = [
+    body('status')
+        .isIn(['scheduled', 'confirmed', 'checked-in', 'in-progress', 'completed', 'cancelled', 'no-show'])
+        .withMessage('Invalid appointment status'),
+    body('note').optional({ values: 'falsy' }).isString().withMessage('Status note must be a string')
+];
+
 router.use(protect);
 router.get('/', authorize('admin', 'doctor', 'receptionist', 'patient'), listAppointments);
 router.get('/:id', authorize('admin', 'doctor', 'receptionist', 'patient'), param('id').isMongoId().withMessage('Invalid appointment id'), validateRequest, getAppointmentById);
 router.post('/', authorize('admin', 'doctor', 'receptionist'), appointmentValidation, validateRequest, createAppointment);
 router.put('/:id', authorize('admin', 'doctor', 'receptionist'), param('id').isMongoId().withMessage('Invalid appointment id'), appointmentValidation, validateRequest, updateAppointment);
+router.patch('/:id/status', authorize('admin', 'doctor', 'receptionist'), param('id').isMongoId().withMessage('Invalid appointment id'), appointmentStatusValidation, validateRequest, updateAppointmentStatus);
 router.delete('/:id', authorize('admin', 'receptionist'), param('id').isMongoId().withMessage('Invalid appointment id'), validateRequest, deleteAppointment);
 
 export default router;

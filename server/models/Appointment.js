@@ -38,8 +38,23 @@ const appointmentSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['scheduled', 'confirmed', 'completed', 'cancelled', 'no-show'],
+            enum: ['scheduled', 'confirmed', 'checked-in', 'in-progress', 'completed', 'cancelled', 'no-show'],
             default: 'scheduled'
+        },
+        statusHistory: {
+            type: [
+                {
+                    from: { type: String, trim: true, default: '' },
+                    to: { type: String, trim: true, required: true },
+                    note: { type: String, trim: true, default: '' },
+                    changedBy: {
+                        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+                        role: { type: String, trim: true, required: true }
+                    },
+                    changedAt: { type: Date, default: Date.now }
+                }
+            ],
+            default: []
         },
         reason: {
             type: String,
