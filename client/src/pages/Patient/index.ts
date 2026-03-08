@@ -1,0 +1,11 @@
+export { PatientDashboardPage } from './PatientDashboardPage';
+export { PatientAppointmentsPage } from './PatientAppointmentsPage';
+export { PatientRecordsPage } from './PatientRecordsPage';
+export { PatientHeader } from './PatientHeader';
+export { PatientSidebar } from './PatientSidebar';
+export { PatientStats } from './PatientStats';
+export { UpcomingAppointments } from './UpcomingAppointments';
+export { HealthMetrics } from './HealthMetrics';
+export { QuickActions } from './QuickActions';
+export { MedicationReminders } from './MedicationReminders';
+export { RecentActivity } from './RecentActivity';
