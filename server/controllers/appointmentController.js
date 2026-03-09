@@ -11,7 +11,8 @@ import { sendAppointmentConfirmation, sendAppointmentCancellation } from '../ser
 const roleAllowedStatusTargets = {
     admin: ['scheduled', 'confirmed', 'cancelled'],
     receptionist: ['scheduled', 'confirmed', 'cancelled'],
-    doctor: ['checked-in', 'in-progress', 'completed', 'no-show']
+    doctor: ['checked-in', 'in-progress', 'completed', 'no-show'],
+    patient: ['cancelled']
 };
 
 const appointmentStatusTransitions = {

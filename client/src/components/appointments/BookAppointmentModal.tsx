@@ -20,13 +20,40 @@ interface TimeSlot {
   available: boolean;
 }
 
+interface ApiResponse<T> {
+  data: T;
+}
+
+interface AppointmentResult {
+  _id: string;
+  appointmentNumber?: string;
+  scheduledFor?: string;
+  doctor?: {
+    firstName?: string;
+    lastName?: string;
+  } | null;
+}
+
 interface BookAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: (appointment?: AppointmentResult) => void;
+  mode?: 'book' | 'reschedule';
+  initialDoctorId?: string;
+  rescheduleMeta?: {
+    doctorName?: string;
+    scheduledFor?: string;
+  };
 }
 
-export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppointmentModalProps) {
+export function BookAppointmentModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  mode = 'book',
+  initialDoctorId,
+  rescheduleMeta,
+}: BookAppointmentModalProps) {
   const [step, setStep] = useState<'doctor' | 'datetime' | 'details'>('doctor');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
@@ -39,9 +66,11 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setHasInitialized(false);
       fetchDoctors();
     }
   }, [isOpen]);
@@ -65,6 +94,22 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
       fetchAvailableSlots();
     }
   }, [selectedDoctor, selectedDate]);
+
+  useEffect(() => {
+    if (!isOpen || hasInitialized) {
+      return;
+    }
+
+    if (initialDoctorId && doctors.length > 0) {
+      const matchedDoctor = doctors.find((doctor) => doctor._id === initialDoctorId);
+      if (matchedDoctor) {
+        setSelectedDoctor(matchedDoctor);
+        setStep('datetime');
+      }
+    }
+
+    setHasInitialized(true);
+  }, [isOpen, hasInitialized, initialDoctorId, doctors]);
 
   const fetchDoctors = async () => {
     try {
@@ -105,7 +150,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
       setIsLoading(true);
       setError(null);
 
-      await apiRequest('/appointments/book', {
+      const response = await apiRequest<ApiResponse<AppointmentResult>>('/appointments/book', {
         method: 'POST',
         body: JSON.stringify({
           doctor: selectedDoctor._id,
@@ -117,7 +162,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
         })
       });
 
-      onSuccess();
+      onSuccess?.(response.data);
       handleClose();
     } catch (err: any) {
       setError(err.message || 'Failed to book appointment');
@@ -135,6 +180,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
     setAppointmentType('consultation');
     setSearchTerm('');
     setError(null);
+    setHasInitialized(false);
     onClose();
   };
 
@@ -151,12 +197,14 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">Book Appointment</h2>
+            <h2 className="text-2xl font-bold text-slate-900">
+              {mode === 'reschedule' ? 'Reschedule Appointment' : 'Book Appointment'}
+            </h2>
             <button
               onClick={handleClose}
               className="text-slate-400 hover:text-slate-600 text-2xl leading-none"
             >
-              ×
+              X
             </button>
           </div>
           <div className="flex gap-2 mt-4">
@@ -167,6 +215,19 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
         </div>
 
         <div className="p-6">
+          {mode === 'reschedule' && rescheduleMeta && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              Rescheduling
+              {rescheduleMeta.doctorName ? ` with ${rescheduleMeta.doctorName}` : ''}.
+              {rescheduleMeta.scheduledFor ? ` Current time: ${new Date(rescheduleMeta.scheduledFor).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })}.` : ''}
+            </div>
+          )}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
@@ -353,7 +414,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
                   disabled={isLoading || !reason.trim()}
                   className="flex-1"
                 >
-                  {isLoading ? 'Booking...' : 'Book Appointment'}
+                  {isLoading ? 'Booking...' : mode === 'reschedule' ? 'Confirm New Time' : 'Book Appointment'}
                 </Button>
               </div>
             </div>
@@ -363,3 +424,4 @@ export function BookAppointmentModal({ isOpen, onClose, onSuccess }: BookAppoint
     </div>
   );
 }
+

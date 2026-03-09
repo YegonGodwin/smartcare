@@ -50,7 +50,7 @@ router.get('/:id', authorize('admin', 'doctor', 'receptionist', 'patient'), para
 router.post('/', authorize('admin', 'doctor', 'receptionist'), appointmentValidation, validateRequest, createAppointment);
 router.post('/book', authorize('patient'), patientBookingValidation, validateRequest, bookAppointmentAsPatient);
 router.put('/:id', authorize('admin', 'doctor', 'receptionist'), param('id').isMongoId().withMessage('Invalid appointment id'), appointmentValidation, validateRequest, updateAppointment);
-router.patch('/:id/status', authorize('admin', 'doctor', 'receptionist'), param('id').isMongoId().withMessage('Invalid appointment id'), appointmentStatusValidation, validateRequest, updateAppointmentStatus);
+router.patch('/:id/status', authorize('admin', 'doctor', 'receptionist', 'patient'), param('id').isMongoId().withMessage('Invalid appointment id'), appointmentStatusValidation, validateRequest, updateAppointmentStatus);
 router.delete('/:id', authorize('admin', 'receptionist'), param('id').isMongoId().withMessage('Invalid appointment id'), validateRequest, deleteAppointment);
 
 export default router;
