@@ -4,6 +4,7 @@ import {
     listDoctors,
     getDoctorById,
     createDoctor,
+    onboardDoctor,
     updateDoctor,
     deleteDoctor
 } from '../controllers/doctorController.js';
@@ -22,8 +23,14 @@ const doctorValidation = [
     body('licenseNumber').trim().notEmpty().withMessage('License number is required')
 ];
 
+const onboardDoctorValidation = [
+    ...doctorValidation,
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+];
+
 router.use(protect);
 router.get('/', authorize('admin', 'doctor', 'receptionist', 'patient'), listDoctors);
+router.post('/onboard', authorize('admin'), onboardDoctorValidation, validateRequest, onboardDoctor);
 router.get('/:id', authorize('admin', 'doctor', 'receptionist', 'patient'), param('id').isMongoId().withMessage('Invalid doctor id'), validateRequest, getDoctorById);
 router.post('/', authorize('admin'), doctorValidation, validateRequest, createDoctor);
 router.put('/:id', authorize('admin'), param('id').isMongoId().withMessage('Invalid doctor id'), doctorValidation, validateRequest, updateDoctor);

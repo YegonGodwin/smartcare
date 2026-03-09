@@ -19,6 +19,54 @@ const availabilitySchema = new mongoose.Schema(
     { _id: false }
 );
 
+const timeOffSchema = new mongoose.Schema(
+    {
+        startDate: {
+            type: Date,
+            required: true
+        },
+        endDate: {
+            type: Date,
+            required: true
+        },
+        reason: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        type: {
+            type: String,
+            enum: ['vacation', 'sick-leave', 'conference', 'personal', 'other'],
+            default: 'other'
+        },
+        isRecurring: {
+            type: Boolean,
+            default: false
+        },
+        recurringPattern: {
+            dayOfWeek: {
+                type: String,
+                enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+                default: null
+            },
+            startTime: {
+                type: String,
+                default: null
+            },
+            endTime: {
+                type: String,
+                default: null
+            }
+        },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        }
+    },
+    { timestamps: true }
+);
+
 const doctorSchema = new mongoose.Schema(
     {
         staffId: {
@@ -77,6 +125,23 @@ const doctorSchema = new mongoose.Schema(
         availability: {
             type: [availabilitySchema],
             default: []
+        },
+        timeOff: {
+            type: [timeOffSchema],
+            default: []
+        },
+        isEmergencyUnavailable: {
+            type: Boolean,
+            default: false
+        },
+        emergencyUnavailableUntil: {
+            type: Date,
+            default: null
+        },
+        emergencyUnavailableReason: {
+            type: String,
+            trim: true,
+            default: ''
         },
         status: {
             type: String,
