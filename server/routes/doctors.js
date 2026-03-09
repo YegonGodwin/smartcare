@@ -23,8 +23,8 @@ const doctorValidation = [
 ];
 
 router.use(protect);
-router.get('/', authorize('admin', 'doctor', 'receptionist'), listDoctors);
-router.get('/:id', authorize('admin', 'doctor', 'receptionist'), param('id').isMongoId().withMessage('Invalid doctor id'), validateRequest, getDoctorById);
+router.get('/', authorize('admin', 'doctor', 'receptionist', 'patient'), listDoctors);
+router.get('/:id', authorize('admin', 'doctor', 'receptionist', 'patient'), param('id').isMongoId().withMessage('Invalid doctor id'), validateRequest, getDoctorById);
 router.post('/', authorize('admin'), doctorValidation, validateRequest, createDoctor);
 router.put('/:id', authorize('admin'), param('id').isMongoId().withMessage('Invalid doctor id'), doctorValidation, validateRequest, updateDoctor);
 router.delete('/:id', authorize('admin'), param('id').isMongoId().withMessage('Invalid doctor id'), validateRequest, deleteDoctor);

@@ -1,8 +1,12 @@
 import Appointment from '../models/Appointment.js';
+import Doctor from '../models/Doctor.js';
+import Patient from '../models/Patient.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { getPagination, getSort } from '../utils/buildQuery.js';
 import { sendSuccess } from '../utils/response.js';
+import { checkAppointmentConflict, isDoctorAvailable } from '../utils/appointmentHelpers.js';
+import { sendAppointmentConfirmation, sendAppointmentCancellation } from '../services/notificationService.js';
 
 const roleAllowedStatusTargets = {
     admin: ['scheduled', 'confirmed', 'cancelled'],
@@ -109,6 +113,39 @@ export const createAppointment = asyncHandler(async (req, res) => {
         payload.doctor = getDoctorProfileId(req);
     }
 
+    // Validate doctor exists and is active
+    const doctor = await Doctor.findById(payload.doctor);
+    if (!doctor) {
+        throw new ApiError(404, 'Doctor not found');
+    }
+
+    if (doctor.status !== 'active') {
+        throw new ApiError(400, 'Doctor is not currently available for appointments');
+    }
+
+    // Check if appointment is in the past
+    const scheduledFor = new Date(payload.scheduledFor);
+    if (scheduledFor < new Date()) {
+        throw new ApiError(400, 'Cannot schedule appointments in the past');
+    }
+
+    // Check doctor availability schedule
+    const availabilityCheck = isDoctorAvailable(doctor, payload.scheduledFor, payload.durationMinutes || 30);
+    if (!availabilityCheck.available) {
+        throw new ApiError(400, availabilityCheck.reason);
+    }
+
+    // Check for appointment conflicts
+    const conflict = await checkAppointmentConflict(
+        payload.doctor,
+        payload.scheduledFor,
+        payload.durationMinutes || 30
+    );
+
+    if (conflict) {
+        throw new ApiError(409, 'Doctor already has an appointment at this time. Please choose a different time slot.');
+    }
+
     payload.status = 'scheduled';
     payload.statusHistory = [
         {
@@ -125,6 +162,15 @@ export const createAppointment = asyncHandler(async (req, res) => {
 
     const appointment = await Appointment.create(payload);
     const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
+    
+    // Send confirmation email
+    try {
+        const patient = await Patient.findById(payload.patient);
+        await sendAppointmentConfirmation(populatedAppointment, patient, doctor);
+    } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError.message);
+    }
+    
     sendSuccess(res, 201, 'Appointment created successfully', populatedAppointment);
 });
 
@@ -147,6 +193,46 @@ export const updateAppointment = asyncHandler(async (req, res) => {
 
     if (req.user?.role === 'doctor') {
         payload.doctor = getDoctorProfileId(req);
+    }
+
+    // If updating doctor or scheduledFor, validate conflicts
+    if (payload.doctor || payload.scheduledFor) {
+        const doctorId = payload.doctor || existingAppointment.doctor;
+        const scheduledFor = payload.scheduledFor || existingAppointment.scheduledFor;
+        const durationMinutes = payload.durationMinutes || existingAppointment.durationMinutes;
+
+        // Validate doctor exists and is active
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) {
+            throw new ApiError(404, 'Doctor not found');
+        }
+
+        if (doctor.status !== 'active') {
+            throw new ApiError(400, 'Doctor is not currently available for appointments');
+        }
+
+        // Check if appointment is in the past
+        if (new Date(scheduledFor) < new Date()) {
+            throw new ApiError(400, 'Cannot schedule appointments in the past');
+        }
+
+        // Check doctor availability schedule
+        const availabilityCheck = isDoctorAvailable(doctor, scheduledFor, durationMinutes);
+        if (!availabilityCheck.available) {
+            throw new ApiError(400, availabilityCheck.reason);
+        }
+
+        // Check for conflicts (excluding current appointment)
+        const conflict = await checkAppointmentConflict(
+            doctorId,
+            scheduledFor,
+            durationMinutes,
+            req.params.id
+        );
+
+        if (conflict) {
+            throw new ApiError(409, 'Doctor already has an appointment at this time. Please choose a different time slot.');
+        }
     }
 
     delete payload.status;
@@ -208,6 +294,17 @@ export const updateAppointmentStatus = asyncHandler(async (req, res) => {
     await appointment.save();
     const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
 
+    // Send cancellation email if status is cancelled
+    if (nextStatus === 'cancelled') {
+        try {
+            const patient = await Patient.findById(appointment.patient);
+            const doctor = await Doctor.findById(appointment.doctor);
+            await sendAppointmentCancellation(populatedAppointment, patient, doctor, note);
+        } catch (emailError) {
+            console.error('Failed to send cancellation email:', emailError.message);
+        }
+    }
+
     sendSuccess(res, 200, 'Appointment status updated successfully', populatedAppointment);
 });
 
@@ -219,4 +316,93 @@ export const deleteAppointment = asyncHandler(async (req, res) => {
     }
 
     sendSuccess(res, 200, 'Appointment deleted successfully');
+});
+
+export const getDoctorAvailableSlots = asyncHandler(async (req, res) => {
+    const { doctorId, date } = req.query;
+
+    if (!doctorId || !date) {
+        throw new ApiError(400, 'Doctor ID and date are required');
+    }
+
+    const { getDoctorAvailableSlots: getSlots } = await import('../utils/appointmentHelpers.js');
+    const slots = await getSlots(doctorId, date, 30);
+
+    sendSuccess(res, 200, 'Available slots retrieved successfully', slots);
+});
+
+export const bookAppointmentAsPatient = asyncHandler(async (req, res) => {
+    if (req.user?.role !== 'patient') {
+        throw new ApiError(403, 'Only patients can use this endpoint');
+    }
+
+    const patientProfileId = getPatientProfileId(req);
+    if (!patientProfileId) {
+        throw new ApiError(400, 'Patient profile not found');
+    }
+
+    const payload = {
+        ...req.body,
+        patient: patientProfileId
+    };
+
+    // Validate doctor exists and is active
+    const doctor = await Doctor.findById(payload.doctor);
+    if (!doctor) {
+        throw new ApiError(404, 'Doctor not found');
+    }
+
+    if (doctor.status !== 'active') {
+        throw new ApiError(400, 'Doctor is not currently available for appointments');
+    }
+
+    // Check if appointment is in the past
+    const scheduledFor = new Date(payload.scheduledFor);
+    if (scheduledFor < new Date()) {
+        throw new ApiError(400, 'Cannot schedule appointments in the past');
+    }
+
+    // Check doctor availability schedule
+    const availabilityCheck = isDoctorAvailable(doctor, payload.scheduledFor, payload.durationMinutes || 30);
+    if (!availabilityCheck.available) {
+        throw new ApiError(400, availabilityCheck.reason);
+    }
+
+    // Check for appointment conflicts
+    const conflict = await checkAppointmentConflict(
+        payload.doctor,
+        payload.scheduledFor,
+        payload.durationMinutes || 30
+    );
+
+    if (conflict) {
+        throw new ApiError(409, 'Doctor already has an appointment at this time. Please choose a different time slot.');
+    }
+
+    payload.status = 'scheduled';
+    payload.statusHistory = [
+        {
+            from: '',
+            to: 'scheduled',
+            note: 'Appointment booked by patient',
+            changedBy: {
+                userId: req.user._id,
+                role: req.user.role
+            },
+            changedAt: new Date()
+        }
+    ];
+
+    const appointment = await Appointment.create(payload);
+    const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
+    
+    // Send confirmation email
+    try {
+        const patient = await Patient.findById(payload.patient);
+        await sendAppointmentConfirmation(populatedAppointment, patient, doctor);
+    } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError.message);
+    }
+    
+    sendSuccess(res, 201, 'Appointment booked successfully', populatedAppointment);
 });

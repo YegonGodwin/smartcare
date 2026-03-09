@@ -1,17 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface QueryState<T> {
   data: T | null;
   isLoading: boolean;
   error: string | null;
+  refetch: () => void;
 }
 
 export function useApiQuery<T>(queryFn: (() => Promise<T>) | null, deps: unknown[] = []): QueryState<T> {
-  const [state, setState] = useState<QueryState<T>>({
+  const [state, setState] = useState<{ data: T | null; isLoading: boolean; error: string | null }>({
     data: null,
     isLoading: true,
     error: null,
   });
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+
+  const refetch = useCallback(() => {
+    setRefetchTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (!queryFn) {
@@ -54,7 +60,7 @@ export function useApiQuery<T>(queryFn: (() => Promise<T>) | null, deps: unknown
     return () => {
       disposed = true;
     };
-  }, deps);
+  }, [...deps, refetchTrigger]);
 
-  return state;
+  return { ...state, refetch };
 }

@@ -4,6 +4,7 @@ import Patient from '../models/Patient.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { sendSuccess } from '../utils/response.js';
+import { sendPatientApprovalNotification } from '../services/notificationService.js';
 
 const signToken = (user) => {
     return jwt.sign(
@@ -183,6 +184,13 @@ export const approvePatient = asyncHandler(async (req, res) => {
         .populate('patientProfile', 'firstName lastName email phone patientNumber')
         .populate('approvedBy', 'firstName lastName email');
 
+    // Send approval email
+    try {
+        await sendPatientApprovalNotification(populatedUser, true);
+    } catch (emailError) {
+        console.error('Failed to send approval email:', emailError.message);
+    }
+
     sendSuccess(res, 200, 'Patient approved successfully', {
         user: populatedUser.toSafeObject()
     });
@@ -205,6 +213,13 @@ export const rejectPatient = asyncHandler(async (req, res) => {
     user.isActive = false;
     user.approvalNote = reason || 'Registration rejected';
     await user.save();
+
+    // Send rejection email
+    try {
+        await sendPatientApprovalNotification(user, false);
+    } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError.message);
+    }
 
     sendSuccess(res, 200, 'Patient registration rejected', {
         user: user.toSafeObject()

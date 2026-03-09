@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
 import connectMongo from './config/database.js';
+import { initializeEmailTransporter } from './config/email.js';
+import { startReminderService } from './services/reminderService.js';
 import rateLimiter from './middleware/rateLimiter.js';
 import errorHandler from './middleware/errorHandler.js';
 import notFound from './middleware/notFound.js';
@@ -45,6 +47,8 @@ app.use(errorHandler);
 const startServer = async () => {
     try {
         await connectMongo();
+        initializeEmailTransporter();
+        startReminderService();
 
         const server = app.listen(port, () => {
             console.log(`Server running on http://localhost:${port}`);
