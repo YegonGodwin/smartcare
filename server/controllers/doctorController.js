@@ -7,6 +7,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { getPagination, getSort, buildTextSearch } from '../utils/buildQuery.js';
 import { sendSuccess } from '../utils/response.js';
+import { initializeDoctorAvailability } from '../utils/doctorOnboarding.js';
 
 export const listDoctors = asyncHandler(async (req, res) => {
     const { page, limit, skip } = getPagination(req.query);
@@ -66,6 +67,10 @@ export const getDoctorById = asyncHandler(async (req, res) => {
 
 export const createDoctor = asyncHandler(async (req, res) => {
     const doctor = await Doctor.create(req.body);
+    
+    // Initialize default availability schedule for the new doctor
+    await initializeDoctorAvailability(doctor, 'standard');
+    
     const populatedDoctor = await Doctor.findById(doctor._id).populate('department', 'name code');
     sendSuccess(res, 201, 'Doctor created successfully', populatedDoctor);
 });
@@ -187,6 +192,9 @@ export const onboardDoctor = asyncHandler(async (req, res) => {
         createdDoctor = result.doctorDoc;
         createdUser = result.userDoc;
     }
+
+    // Initialize default availability schedule for the new doctor
+    await initializeDoctorAvailability(createdDoctor, 'standard');
 
     const [populatedDoctor, populatedUser] = await Promise.all([
         Doctor.findById(createdDoctor._id).populate('department', 'name code'),

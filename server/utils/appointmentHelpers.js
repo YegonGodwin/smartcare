@@ -1,5 +1,6 @@
 import Appointment from '../models/Appointment.js';
 import Doctor from '../models/Doctor.js';
+import { getDefaultAvailability } from './defaultAvailability.js';
 
 /**
  * Check if a doctor has a conflicting appointment at the given time
@@ -133,6 +134,11 @@ export async function getDoctorAvailableSlots(doctorId, date, slotDuration = 30)
         return [];
     }
 
+    // Check if doctor has availability schedule configured
+    if (!doctor.availability || doctor.availability.length === 0) {
+        return [];
+    }
+
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
     
@@ -141,6 +147,27 @@ export async function getDoctorAvailableSlots(doctorId, date, slotDuration = 30)
 
     if (!dayAvailability) {
         return [];
+    }
+
+    // Check emergency unavailability
+    if (doctor.isEmergencyUnavailable) {
+        if (!doctor.emergencyUnavailableUntil || targetDate <= new Date(doctor.emergencyUnavailableUntil)) {
+            return [];
+        }
+    }
+
+    // Check if date falls within any time-off period
+    if (doctor.timeOff && doctor.timeOff.length > 0) {
+        for (const timeOff of doctor.timeOff) {
+            const timeOffStart = new Date(timeOff.startDate);
+            timeOffStart.setHours(0, 0, 0, 0);
+            const timeOffEnd = new Date(timeOff.endDate);
+            timeOffEnd.setHours(23, 59, 59, 999);
+            
+            if (targetDate >= timeOffStart && targetDate <= timeOffEnd) {
+                return [];
+            }
+        }
     }
 
     // Get existing appointments for this doctor on this date

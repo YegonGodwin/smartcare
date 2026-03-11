@@ -129,12 +129,18 @@ export function BookAppointmentModal({
 
     try {
       setIsLoading(true);
+      setError(null);
       const response = await apiRequest<{ data: TimeSlot[] }>(
         `/appointments/available-slots?doctorId=${selectedDoctor._id}&date=${selectedDate}`
       );
       setAvailableSlots(response.data);
-    } catch (err) {
-      setError('Failed to load available slots');
+      
+      // Show helpful message if no slots available
+      if (response.data.length === 0) {
+        setError('No available time slots for this date. The doctor may not have configured their schedule yet or may be unavailable on this day.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load available slots');
     } finally {
       setIsLoading(false);
     }
@@ -310,7 +316,13 @@ export function BookAppointmentModal({
                   {isLoading ? (
                     <p className="text-slate-500 text-center py-4">Loading slots...</p>
                   ) : availableSlots.length === 0 ? (
-                    <p className="text-slate-500 text-center py-4">No available slots for this date</p>
+                    <div className="text-center py-6 px-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-amber-800 font-medium mb-2">No available slots for this date</p>
+                      <p className="text-sm text-amber-700">
+                        The doctor may not have configured their schedule yet or may be unavailable on this day. 
+                        Please try a different date or contact the clinic for assistance.
+                      </p>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                       {availableSlots.map((slot) => (

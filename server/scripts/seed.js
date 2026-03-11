@@ -8,6 +8,9 @@ import Appointment from '../models/Appointment.js';
 import MedicalRecord from '../models/MedicalRecord.js';
 import User from '../models/User.js';
 
+// abigael@gmail.com password:12345678
+// 
+
 dotenv.config();
 
 const departmentSeed = [

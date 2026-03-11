@@ -2,6 +2,7 @@ import Doctor from '../models/Doctor.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { sendSuccess } from '../utils/response.js';
+import { validateDoctorAvailability } from '../utils/doctorOnboarding.js';
 
 // Get doctor's availability and time-off
 export const getDoctorAvailability = asyncHandler(async (req, res) => {
@@ -18,7 +19,13 @@ export const getDoctorAvailability = asyncHandler(async (req, res) => {
         throw new ApiError(403, 'You can only view your own availability');
     }
     
-    sendSuccess(res, 200, 'Doctor availability retrieved successfully', doctor);
+    // Add validation status
+    const validation = validateDoctorAvailability(doctor);
+    
+    sendSuccess(res, 200, 'Doctor availability retrieved successfully', {
+        ...doctor.toObject(),
+        validation
+    });
 });
 
 // Update doctor's weekly availability schedule
