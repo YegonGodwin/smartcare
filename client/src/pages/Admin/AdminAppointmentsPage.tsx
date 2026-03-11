@@ -305,14 +305,15 @@ export function AdminAppointmentsPage() {
                 {isLoading ? (
                   <div className="p-6 text-sm text-slate-500">Loading appointments...</div>
                 ) : (
-                  <table className="w-full text-left">
+                  <div className="w-full overflow-x-auto">
+                    <table className="w-full min-w-[900px] text-left">
                     <thead className="bg-slate-50">
                       <tr>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Patient</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Doctor</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">When</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Patient</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Doctor</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">When</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Status</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -328,7 +329,7 @@ export function AdminAppointmentsPage() {
                             Dr. {appointment.doctor?.firstName} {appointment.doctor?.lastName}
                             <div className="text-xs text-slate-500">{appointment.department?.name || 'Department pending'}</div>
                           </td>
-                          <td className="px-6 py-4 text-slate-600">
+                          <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
                             {new Intl.DateTimeFormat('en-US', {
                               month: 'short',
                               day: 'numeric',
@@ -343,7 +344,7 @@ export function AdminAppointmentsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-2 flex-wrap">
                               {(appointment.status === 'scheduled' || appointment.status === 'confirmed') && (
                                 <Button type="button" size="sm" variant="secondary" onClick={() => handleEdit(appointment)}>
                                   Edit
@@ -367,7 +368,8 @@ export function AdminAppointmentsPage() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 )}
               </section>
             </div>
