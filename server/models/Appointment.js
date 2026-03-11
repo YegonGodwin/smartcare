@@ -38,8 +38,50 @@ const appointmentSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['scheduled', 'confirmed', 'checked-in', 'in-progress', 'completed', 'cancelled', 'no-show'],
+            enum: ['pending', 'scheduled', 'confirmed', 'checked-in', 'in-progress', 'completed', 'cancelled', 'no-show', 'rejected'],
             default: 'scheduled'
+        },
+        requiresApproval: {
+            type: Boolean,
+            default: false
+        },
+        approvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        approvedAt: {
+            type: Date,
+            default: null
+        },
+        rejectedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        rejectedAt: {
+            type: Date,
+            default: null
+        },
+        rejectionReason: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        rescheduleHistory: {
+            type: [
+                {
+                    previousDate: { type: Date, required: true },
+                    newDate: { type: Date, required: true },
+                    reason: { type: String, trim: true, default: '' },
+                    rescheduledBy: {
+                        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+                        role: { type: String, trim: true, required: true }
+                    },
+                    rescheduledAt: { type: Date, default: Date.now }
+                }
+            ],
+            default: []
         },
         statusHistory: {
             type: [
@@ -71,6 +113,15 @@ const appointmentSchema = new mongoose.Schema(
             temperature: { type: String, trim: true, default: '' },
             pulseRate: { type: String, trim: true, default: '' },
             weight: { type: String, trim: true, default: '' }
+        },
+        priority: {
+            type: String,
+            enum: ['low', 'normal', 'high', 'urgent'],
+            default: 'normal'
+        },
+        isFirstVisit: {
+            type: Boolean,
+            default: false
         }
     },
     {

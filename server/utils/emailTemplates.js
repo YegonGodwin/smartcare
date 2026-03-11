@@ -408,3 +408,268 @@ SmartCare Hospital
         };
     }
 };
+
+export const appointmentApprovedEmail = (appointment, patient, doctor) => {
+    const appointmentDate = new Date(appointment.scheduledFor);
+    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const formattedTime = appointmentDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    return {
+        subject: `Appointment Approved - ${formattedDate}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+        .appointment-card { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+        .label { font-weight: bold; color: #6b7280; }
+        .value { color: #111827; }
+        .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Appointment Approved</h1>
+            <p>Your appointment request has been approved</p>
+        </div>
+        <div class="content">
+            <p>Dear ${patient.firstName} ${patient.lastName},</p>
+            <p>Your appointment request has been approved. Here are the details:</p>
+            
+            <div class="appointment-card">
+                <h3 style="margin-top: 0; color: #059669;">Appointment Details</h3>
+                <div class="detail-row">
+                    <span class="label">Appointment Number:</span>
+                    <span class="value">${appointment.appointmentNumber}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Doctor:</span>
+                    <span class="value">Dr. ${doctor.firstName} ${doctor.lastName}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Date:</span>
+                    <span class="value">${formattedDate}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Time:</span>
+                    <span class="value">${formattedTime}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Duration:</span>
+                    <span class="value">${appointment.durationMinutes} minutes</span>
+                </div>
+                <div class="detail-row" style="border-bottom: none;">
+                    <span class="label">Type:</span>
+                    <span class="value" style="text-transform: capitalize;">${appointment.type}</span>
+                </div>
+            </div>
+
+            <p>Please arrive 15 minutes early and bring any relevant documents.</p>
+
+            <div class="footer">
+                <p><strong>SmartCare Hospital</strong></p>
+                <p>This is an automated message. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        `,
+        text: `
+Appointment Approved
+
+Dear ${patient.firstName} ${patient.lastName},
+
+Your appointment request has been approved. Details:
+
+Appointment Number: ${appointment.appointmentNumber}
+Doctor: Dr. ${doctor.firstName} ${doctor.lastName}
+Date: ${formattedDate}
+Time: ${formattedTime}
+Duration: ${appointment.durationMinutes} minutes
+Type: ${appointment.type}
+
+Please arrive 15 minutes early and bring any relevant documents.
+
+SmartCare Hospital
+        `
+    };
+};
+
+export const appointmentRejectedEmail = (appointment, patient, doctor) => {
+    const appointmentDate = new Date(appointment.scheduledFor);
+    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const formattedTime = appointmentDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    const reason = appointment.rejectionReason || 'No reason provided';
+
+    return {
+        subject: `Appointment Request Rejected - ${appointment.appointmentNumber}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+        .info-box { background: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444; }
+        .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Appointment Rejected</h1>
+        </div>
+        <div class="content">
+            <p>Dear ${patient.firstName} ${patient.lastName},</p>
+            <p>We are sorry to inform you that your appointment request has been rejected.</p>
+
+            <div class="info-box">
+                <p><strong>Doctor:</strong> Dr. ${doctor.firstName} ${doctor.lastName}</p>
+                <p><strong>Date:</strong> ${formattedDate}</p>
+                <p><strong>Time:</strong> ${formattedTime}</p>
+                <p><strong>Reason:</strong> ${reason}</p>
+            </div>
+
+            <p>You may book a new appointment at another time or with another doctor.</p>
+
+            <div class="footer">
+                <p><strong>SmartCare Hospital</strong></p>
+                <p>This is an automated message. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        `,
+        text: `
+Appointment Request Rejected
+
+Dear ${patient.firstName} ${patient.lastName},
+
+Your appointment request has been rejected.
+
+Doctor: Dr. ${doctor.firstName} ${doctor.lastName}
+Date: ${formattedDate}
+Time: ${formattedTime}
+Reason: ${reason}
+
+You may book a new appointment at another time or with another doctor.
+
+SmartCare Hospital
+        `
+    };
+};
+
+export const appointmentRescheduledEmail = (appointment, patient, doctor, previousDate) => {
+    const previous = previousDate ? new Date(previousDate) : null;
+    const newDate = new Date(appointment.scheduledFor);
+    const previousDateText = previous
+        ? previous.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : 'N/A';
+    const previousTimeText = previous
+        ? previous.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        : 'N/A';
+    const newDateText = newDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const newTimeText = newDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    return {
+        subject: `Appointment Rescheduled - ${appointment.appointmentNumber}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+        .info-box { background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }
+        .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Appointment Rescheduled</h1>
+            <p>Your appointment has been moved to a new time</p>
+        </div>
+        <div class="content">
+            <p>Dear ${patient.firstName} ${patient.lastName},</p>
+            <p>Your appointment has been rescheduled. Please review the updated details:</p>
+
+            <div class="info-box">
+                <p><strong>Doctor:</strong> Dr. ${doctor.firstName} ${doctor.lastName}</p>
+                <p><strong>Previous Date:</strong> ${previousDateText}</p>
+                <p><strong>Previous Time:</strong> ${previousTimeText}</p>
+                <p><strong>New Date:</strong> ${newDateText}</p>
+                <p><strong>New Time:</strong> ${newTimeText}</p>
+                <p><strong>Appointment Number:</strong> ${appointment.appointmentNumber}</p>
+            </div>
+
+            <p>If this time does not work for you, please contact us to reschedule.</p>
+
+            <div class="footer">
+                <p><strong>SmartCare Hospital</strong></p>
+                <p>This is an automated message. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        `,
+        text: `
+Appointment Rescheduled
+
+Dear ${patient.firstName} ${patient.lastName},
+
+Your appointment has been rescheduled.
+
+Doctor: Dr. ${doctor.firstName} ${doctor.lastName}
+Previous Date: ${previousDateText}
+Previous Time: ${previousTimeText}
+New Date: ${newDateText}
+New Time: ${newTimeText}
+Appointment Number: ${appointment.appointmentNumber}
+
+If this time does not work for you, please contact us to reschedule.
+
+SmartCare Hospital
+        `
+    };
+};

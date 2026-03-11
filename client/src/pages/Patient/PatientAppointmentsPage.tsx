@@ -96,12 +96,14 @@ export function PatientAppointmentsPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
+      pending: 'bg-amber-50 text-amber-700',
       scheduled: 'bg-blue-50 text-blue-700',
       confirmed: 'bg-green-50 text-green-700',
       'checked-in': 'bg-purple-50 text-purple-700',
       'in-progress': 'bg-yellow-50 text-yellow-700',
       completed: 'bg-emerald-50 text-emerald-700',
       cancelled: 'bg-red-50 text-red-700',
+      rejected: 'bg-red-50 text-red-700',
       'no-show': 'bg-slate-50 text-slate-700'
     };
     return colors[status] || 'bg-slate-50 text-slate-700';
@@ -166,9 +168,9 @@ export function PatientAppointmentsPage() {
                     {data.map((appointment) => {
                       const scheduledDate = new Date(appointment.scheduledFor);
                       const isUpcoming = scheduledDate > new Date();
-                      const canManage = isUpcoming && (appointment.status === 'scheduled' || appointment.status === 'confirmed');
+                      const canManage = isUpcoming && (appointment.status === 'scheduled' || appointment.status === 'confirmed' || appointment.status === 'pending');
                       const canCancel = canManage;
-                      const canReschedule = canManage;
+                      const canReschedule = canManage && appointment.status !== 'pending';
 
                       return (
                         <tr key={appointment._id}>

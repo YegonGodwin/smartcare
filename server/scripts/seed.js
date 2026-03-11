@@ -8,8 +8,8 @@ import Appointment from '../models/Appointment.js';
 import MedicalRecord from '../models/MedicalRecord.js';
 import User from '../models/User.js';
 
-// abigael@gmail.com password:12345678
-// 
+// abigael@gmail.com password:12345678 -> patient
+// caren@gmail.com password:12345678 -> patient
 
 dotenv.config();
 

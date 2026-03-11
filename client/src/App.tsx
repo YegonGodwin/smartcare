@@ -19,6 +19,7 @@ import {
   DoctorPatientsPage,
   DoctorRecordsPage,
   DoctorAvailabilityPage,
+  DoctorScheduleManagementPage,
 } from '@pages/Doctor';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -50,6 +51,7 @@ function App() {
           </Route>
           <Route element={<ProtectedRoute roles={['doctor']} />}>
             <Route path="/doctor/dashboard" element={<DoctorDashboardPage />} />
+            <Route path="/doctor/schedule-management" element={<DoctorScheduleManagementPage />} />
             <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
             <Route path="/doctor/availability" element={<DoctorAvailabilityPage />} />
             <Route path="/doctor/patients" element={<DoctorPatientsPage />} />

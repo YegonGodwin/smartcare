@@ -9,20 +9,22 @@ import { checkAppointmentConflict, isDoctorAvailable } from '../utils/appointmen
 import { sendAppointmentConfirmation, sendAppointmentCancellation } from '../services/notificationService.js';
 
 const roleAllowedStatusTargets = {
-    admin: ['scheduled', 'confirmed', 'cancelled'],
+    admin: ['pending', 'scheduled', 'confirmed', 'cancelled', 'rejected'],
     receptionist: ['scheduled', 'confirmed', 'cancelled'],
-    doctor: ['checked-in', 'in-progress', 'completed', 'no-show'],
+    doctor: ['confirmed', 'checked-in', 'in-progress', 'completed', 'no-show', 'rejected'],
     patient: ['cancelled']
 };
 
 const appointmentStatusTransitions = {
+    pending: ['confirmed', 'rejected', 'cancelled'],
     scheduled: ['confirmed', 'checked-in', 'cancelled', 'no-show'],
     confirmed: ['checked-in', 'cancelled', 'no-show'],
     'checked-in': ['in-progress', 'cancelled', 'no-show'],
     'in-progress': ['completed', 'cancelled'],
     completed: [],
     cancelled: [],
-    'no-show': []
+    'no-show': [],
+    rejected: []
 };
 
 const appointmentPopulation = [
@@ -380,12 +382,13 @@ export const bookAppointmentAsPatient = asyncHandler(async (req, res) => {
         throw new ApiError(409, 'Doctor already has an appointment at this time. Please choose a different time slot.');
     }
 
-    payload.status = 'scheduled';
+    payload.status = 'pending';
+    payload.requiresApproval = true;
     payload.statusHistory = [
         {
             from: '',
-            to: 'scheduled',
-            note: 'Appointment booked by patient',
+            to: 'pending',
+            note: 'Appointment booked by patient - awaiting doctor approval',
             changedBy: {
                 userId: req.user._id,
                 role: req.user.role
@@ -397,13 +400,8 @@ export const bookAppointmentAsPatient = asyncHandler(async (req, res) => {
     const appointment = await Appointment.create(payload);
     const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
     
-    // Send confirmation email
-    try {
-        const patient = await Patient.findById(payload.patient);
-        await sendAppointmentConfirmation(populatedAppointment, patient, doctor);
-    } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError.message);
-    }
+    // Note: Confirmation email will be sent after doctor approves
+    // No email sent at this stage - patient will be notified upon approval
     
-    sendSuccess(res, 201, 'Appointment booked successfully', populatedAppointment);
+    sendSuccess(res, 201, 'Appointment request submitted successfully. Awaiting doctor approval.', populatedAppointment);
 });
