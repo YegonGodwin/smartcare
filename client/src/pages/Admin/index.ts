@@ -4,3 +4,4 @@ export { AdminAppointmentsPage } from './AdminAppointmentsPage';
 export { AdminDepartmentsPage } from './AdminDepartmentsPage';
 export { AdminDoctorsPage } from './AdminDoctorsPage';
 export { SystemLogsPage } from './SystemLogsPage';
+export { StaffManagementPage } from './StaffManagementPage';

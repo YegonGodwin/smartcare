@@ -7,6 +7,7 @@ import {
   AdminAppointmentsPage,
   AdminDoctorsPage,
   SystemLogsPage,
+  StaffManagementPage,
 } from '@pages/Admin';
 import { PatientApprovalsPage } from '@pages/Admin/PatientApprovalsPage';
 import {
@@ -45,6 +46,7 @@ function App() {
           <Route element={<ProtectedRoute roles={['admin']} />}>
             <Route path="/admin/doctors" element={<AdminDoctorsPage />} />
             <Route path="/admin/logs" element={<SystemLogsPage />} />
+            <Route path="/admin/staff" element={<StaffManagementPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['patient']} />}>
             <Route path="/patient/dashboard" element={<PatientDashboardPage />} />
