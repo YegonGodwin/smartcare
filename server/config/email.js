@@ -3,22 +3,27 @@ import nodemailer from 'nodemailer';
 let transporter = null;
 
 export const initializeEmailTransporter = () => {
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         console.warn('⚠️  Email configuration missing. Email notifications will be disabled.');
         return null;
     }
 
     transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT || '587'),
-        secure: process.env.EMAIL_SECURE === 'true',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // Use STARTTLS
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        }
+            pass: process.env.EMAIL_PASS
+        },
+        tls: {
+            rejectUnauthorized: false
+        },
+        // Force IPv4
+        family: 4
     });
 
-    console.log('✅ Email transporter initialized');
+    console.log('✅ Email transporter initialized with Gmail SMTP');
     return transporter;
 };
 
@@ -39,7 +44,7 @@ export const sendEmail = async ({ to, subject, html, text }) => {
 
     try {
         const info = await emailTransporter.sendMail({
-            from: `"${process.env.EMAIL_FROM_NAME || 'SmartCare Hospital'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+            from: `"SmartCare Hospital" <${process.env.EMAIL_USER}>`,
             to,
             subject,
             text,
