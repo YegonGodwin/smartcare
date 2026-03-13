@@ -5,6 +5,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { sendSuccess } from '../utils/response.js';
 import { sendPatientApprovalNotification } from '../services/notificationService.js';
+import { logAuth, logUser } from '../services/logService.js';
 
 const signToken = (user) => {
     return jwt.sign(
@@ -45,20 +46,49 @@ export const login = asyncHandler(async (req, res) => {
         .populate('department doctorProfile patientProfile', 'name code firstName lastName specialization patientNumber dateOfBirth gender');
 
     if (!user || !(await user.comparePassword(password))) {
+        await logAuth({
+            action: 'LOGIN',
+            status: 'FAILURE',
+            description: `Failed login attempt for email: ${email}`,
+            details: { email },
+            req
+        });
         throw new ApiError(401, 'Invalid email or password');
     }
 
     if (!user.isActive) {
+        await logAuth({
+            user: user._id,
+            action: 'LOGIN',
+            status: 'FAILURE',
+            description: `Login attempt for inactive account: ${email}`,
+            req
+        });
         throw new ApiError(403, 'This account is inactive');
     }
 
     // Check approval status for patient users
     if (user.role === 'patient' && !user.isApproved) {
+        await logAuth({
+            user: user._id,
+            action: 'LOGIN',
+            status: 'FAILURE',
+            description: `Login attempt for unapproved patient account: ${email}`,
+            req
+        });
         throw new ApiError(403, 'Your account is pending admin approval. Please contact the administrator.');
     }
 
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
+
+    await logAuth({
+        user: user._id,
+        action: 'LOGIN',
+        status: 'SUCCESS',
+        description: `User logged in: ${user.email}`,
+        req
+    });
 
     sendSuccess(res, 200, 'Login successful', buildAuthResponse(user));
 });
@@ -66,6 +96,16 @@ export const login = asyncHandler(async (req, res) => {
 export const registerUser = asyncHandler(async (req, res) => {
     const user = await User.create(req.body);
     const populatedUser = await User.findById(user._id).populate('department doctorProfile patientProfile', 'name code firstName lastName specialization patientNumber dateOfBirth gender');
+
+    await logUser({
+        user: req.user ? req.user.id : user._id,
+        action: 'REGISTER_USER',
+        status: 'SUCCESS',
+        description: `New user registered: ${user.email} with role ${user.role}`,
+        resourceId: user._id,
+        resourceModel: 'User',
+        req
+    });
 
     sendSuccess(res, 201, 'User created successfully', {
         user: populatedUser.toSafeObject()
@@ -88,6 +128,13 @@ export const registerPatient = asyncHandler(async (req, res) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
+        await logAuth({
+            action: 'REGISTER_PATIENT',
+            status: 'FAILURE',
+            description: `Patient registration failed: Email already exists - ${email}`,
+            details: { email },
+            req
+        });
         throw new ApiError(409, 'An account with this email already exists');
     }
 
@@ -118,6 +165,16 @@ export const registerPatient = asyncHandler(async (req, res) => {
         role: 'patient',
         patientProfile: patient._id,
         isApproved: false
+    });
+
+    await logAuth({
+        user: user._id,
+        action: 'REGISTER_PATIENT',
+        status: 'SUCCESS',
+        description: `New patient registration submitted: ${email}`,
+        resourceId: user._id,
+        resourceModel: 'User',
+        req
     });
 
     const populatedUser = await User.findById(user._id).populate('patientProfile', 'patientNumber firstName lastName dateOfBirth gender phone email address isVerified');
@@ -180,6 +237,16 @@ export const approvePatient = asyncHandler(async (req, res) => {
     user.approvedBy = req.user._id;
     await user.save();
 
+    await logUser({
+        user: req.user._id,
+        action: 'APPROVE_PATIENT',
+        status: 'SUCCESS',
+        description: `Patient approved: ${user.email}`,
+        resourceId: user._id,
+        resourceModel: 'User',
+        req
+    });
+
     const populatedUser = await User.findById(user._id)
         .populate('patientProfile', 'firstName lastName email phone patientNumber')
         .populate('approvedBy', 'firstName lastName email');
@@ -213,6 +280,16 @@ export const rejectPatient = asyncHandler(async (req, res) => {
     user.isActive = false;
     user.approvalNote = reason || 'Registration rejected';
     await user.save();
+
+    await logUser({
+        user: req.user._id,
+        action: 'REJECT_PATIENT',
+        status: 'SUCCESS',
+        description: `Patient rejected: ${user.email}. Reason: ${reason || 'Not specified'}`,
+        resourceId: user._id,
+        resourceModel: 'User',
+        req
+    });
 
     // Send rejection email
     try {

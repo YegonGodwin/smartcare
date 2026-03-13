@@ -7,6 +7,7 @@ import { getPagination, getSort } from '../utils/buildQuery.js';
 import { sendSuccess } from '../utils/response.js';
 import { checkAppointmentConflict, isDoctorAvailable } from '../utils/appointmentHelpers.js';
 import { sendAppointmentConfirmation, sendAppointmentCancellation } from '../services/notificationService.js';
+import { logAppointment } from '../services/logService.js';
 
 const roleAllowedStatusTargets = {
     admin: ['pending', 'scheduled', 'confirmed', 'cancelled', 'rejected'],
@@ -166,6 +167,16 @@ export const createAppointment = asyncHandler(async (req, res) => {
     const appointment = await Appointment.create(payload);
     const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
     
+    await logAppointment({
+        user: req.user._id,
+        action: 'CREATE_APPOINTMENT',
+        status: 'SUCCESS',
+        description: `Appointment ${appointment.appointmentNumber} created for patient ${payload.patient}`,
+        resourceId: appointment._id,
+        resourceModel: 'Appointment',
+        req
+    });
+
     // Send confirmation email
     try {
         const patient = await Patient.findById(payload.patient);
@@ -297,6 +308,17 @@ export const updateAppointmentStatus = asyncHandler(async (req, res) => {
     await appointment.save();
     const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
 
+    await logAppointment({
+        user: req.user._id,
+        action: 'UPDATE_APPOINTMENT_STATUS',
+        status: 'SUCCESS',
+        description: `Appointment ${appointment.appointmentNumber} status changed from ${currentStatus} to ${nextStatus}`,
+        resourceId: appointment._id,
+        resourceModel: 'Appointment',
+        details: { from: currentStatus, to: nextStatus, note },
+        req
+    });
+
     // Send cancellation email if status is cancelled
     if (nextStatus === 'cancelled') {
         try {
@@ -400,6 +422,16 @@ export const bookAppointmentAsPatient = asyncHandler(async (req, res) => {
     const appointment = await Appointment.create(payload);
     const populatedAppointment = await Appointment.findById(appointment._id).populate(appointmentPopulation);
     
+    await logAppointment({
+        user: req.user._id,
+        action: 'BOOK_APPOINTMENT_PATIENT',
+        status: 'SUCCESS',
+        description: `New appointment request ${appointment.appointmentNumber} submitted by patient`,
+        resourceId: appointment._id,
+        resourceModel: 'Appointment',
+        req
+    });
+
     // Note: Confirmation email will be sent after doctor approves
     // No email sent at this stage - patient will be notified upon approval
     
