@@ -6,7 +6,7 @@ import ApiError from '../utils/ApiError.js';
 import { getPagination, getSort } from '../utils/buildQuery.js';
 import { sendSuccess } from '../utils/response.js';
 import { checkAppointmentConflict, isDoctorAvailable } from '../utils/appointmentHelpers.js';
-import { sendAppointmentConfirmation, sendAppointmentCancellation } from '../services/notificationService.js';
+import { sendAppointmentConfirmation, sendAppointmentCancellation, sendNewAppointmentRequestNotification } from '../services/notificationService.js';
 import { logAppointment } from '../services/logService.js';
 
 const roleAllowedStatusTargets = {
@@ -432,8 +432,13 @@ export const bookAppointmentAsPatient = asyncHandler(async (req, res) => {
         req
     });
 
-    // Note: Confirmation email will be sent after doctor approves
-    // No email sent at this stage - patient will be notified upon approval
+    // Send notification to doctor about new appointment request
+    try {
+        const patient = await Patient.findById(patientProfileId);
+        await sendNewAppointmentRequestNotification(populatedAppointment, patient, doctor);
+    } catch (emailError) {
+        console.error('Failed to send doctor notification:', emailError.message);
+    }
     
     sendSuccess(res, 201, 'Appointment request submitted successfully. Awaiting doctor approval.', populatedAppointment);
 });

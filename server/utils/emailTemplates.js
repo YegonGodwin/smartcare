@@ -673,3 +673,137 @@ SmartCare Hospital
         `
     };
 };
+
+export const newAppointmentRequestEmail = (appointment, patient, doctor) => {
+    const appointmentDate = new Date(appointment.scheduledFor);
+    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const formattedTime = appointmentDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    return {
+        subject: `New Appointment Request - ${patient.firstName} ${patient.lastName}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+        .request-card { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b5cf6; }
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+        .label { font-weight: bold; color: #6b7280; }
+        .value { color: #111827; }
+        .button { display: inline-block; background: #8b5cf6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
+        .button-approve { background: #10b981; }
+        .button-reject { background: #ef4444; }
+        .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 New Appointment Request</h1>
+            <p>A patient has requested an appointment with you</p>
+        </div>
+        <div class="content">
+            <p>Dear Dr. ${doctor.firstName} ${doctor.lastName},</p>
+            <p>You have received a new appointment request. Please review the details below:</p>
+            
+            <div class="request-card">
+                <h3 style="margin-top: 0; color: #8b5cf6;">Appointment Request Details</h3>
+                <div class="detail-row">
+                    <span class="label">Appointment Number:</span>
+                    <span class="value">${appointment.appointmentNumber}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Patient Name:</span>
+                    <span class="value">${patient.firstName} ${patient.lastName}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Patient Number:</span>
+                    <span class="value">${patient.patientNumber}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Requested Date:</span>
+                    <span class="value">${formattedDate}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Requested Time:</span>
+                    <span class="value">${formattedTime}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Duration:</span>
+                    <span class="value">${appointment.durationMinutes} minutes</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Type:</span>
+                    <span class="value" style="text-transform: capitalize;">${appointment.type}</span>
+                </div>
+                ${appointment.isFirstVisit ? `
+                <div class="detail-row">
+                    <span class="label">Visit Type:</span>
+                    <span class="value">First Visit</span>
+                </div>
+                ` : ''}
+                ${appointment.reason ? `
+                <div class="detail-row" style="border-bottom: none;">
+                    <span class="label">Reason:</span>
+                    <span class="value">${appointment.reason}</span>
+                </div>
+                ` : ''}
+            </div>
+
+            <div style="background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                <strong>⏰ Action Required:</strong>
+                <p style="margin: 10px 0 0 0;">Please review and approve or reject this appointment request at your earliest convenience.</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/doctor/appointments" class="button">View in Dashboard</a>
+            </div>
+
+            <div class="footer">
+                <p><strong>SmartCare Hospital</strong></p>
+                <p>This is an automated notification. Please log in to your dashboard to take action.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        `,
+        text: `
+New Appointment Request
+
+Dear Dr. ${doctor.firstName} ${doctor.lastName},
+
+You have received a new appointment request:
+
+Appointment Number: ${appointment.appointmentNumber}
+Patient Name: ${patient.firstName} ${patient.lastName}
+Patient Number: ${patient.patientNumber}
+Requested Date: ${formattedDate}
+Requested Time: ${formattedTime}
+Duration: ${appointment.durationMinutes} minutes
+Type: ${appointment.type}
+${appointment.isFirstVisit ? 'Visit Type: First Visit' : ''}
+${appointment.reason ? `Reason: ${appointment.reason}` : ''}
+
+Action Required:
+Please review and approve or reject this appointment request at your earliest convenience.
+
+View in Dashboard: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/doctor/appointments
+
+SmartCare Hospital
+        `
+    };
+};

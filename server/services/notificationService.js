@@ -6,7 +6,8 @@ import {
     patientApprovalEmail,
     appointmentApprovedEmail,
     appointmentRejectedEmail,
-    appointmentRescheduledEmail
+    appointmentRescheduledEmail,
+    newAppointmentRequestEmail
 } from '../utils/emailTemplates.js';
 
 export const sendAppointmentConfirmation = async (appointment, patient, doctor) => {
@@ -124,6 +125,23 @@ export const sendAppointmentRescheduleNotification = async (appointment, previou
 
     await sendEmail({
         to: patient.email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text
+    });
+};
+
+export const sendNewAppointmentRequestNotification = async (appointment, patient, doctor) => {
+    // Check if doctor has email
+    if (!doctor?.email) {
+        console.log('Doctor has no email address');
+        return;
+    }
+
+    const emailContent = newAppointmentRequestEmail(appointment, patient, doctor);
+
+    await sendEmail({
+        to: doctor.email,
         subject: emailContent.subject,
         html: emailContent.html,
         text: emailContent.text
