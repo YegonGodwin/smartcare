@@ -30,6 +30,11 @@ const departmentSchema = new mongoose.Schema(
             trim: true,
             default: ''
         },
+        headOfDepartment: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
         isActive: {
             type: Boolean,
             default: true

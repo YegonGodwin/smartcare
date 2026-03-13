@@ -5,6 +5,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import { getPagination, getSort, buildTextSearch } from '../utils/buildQuery.js';
 import { sendSuccess } from '../utils/response.js';
+import { logSystem } from '../services/logService.js';
 
 export const listDepartments = asyncHandler(async (req, res) => {
     const { page, limit, skip } = getPagination(req.query);
@@ -20,7 +21,11 @@ export const listDepartments = asyncHandler(async (req, res) => {
     }
 
     const [items, total] = await Promise.all([
-        Department.find(filter).sort(getSort(req.query, 'name')).skip(skip).limit(limit),
+        Department.find(filter)
+            .populate('headOfDepartment', 'firstName lastName email')
+            .sort(getSort(req.query, 'name'))
+            .skip(skip)
+            .limit(limit),
         Department.countDocuments(filter)
     ]);
 
@@ -52,6 +57,17 @@ export const getDepartmentById = asyncHandler(async (req, res) => {
 
 export const createDepartment = asyncHandler(async (req, res) => {
     const department = await Department.create(req.body);
+    
+    await logSystem({
+        user: req.user._id,
+        action: 'CREATE_DEPARTMENT',
+        status: 'SUCCESS',
+        description: `Created department: ${department.name} (${department.code})`,
+        resourceId: department._id,
+        resourceModel: 'Department',
+        req
+    });
+
     sendSuccess(res, 201, 'Department created successfully', department);
 });
 
@@ -64,6 +80,17 @@ export const updateDepartment = asyncHandler(async (req, res) => {
     if (!department) {
         throw new ApiError(404, 'Department not found');
     }
+
+    await logSystem({
+        user: req.user._id,
+        action: 'UPDATE_DEPARTMENT',
+        status: 'SUCCESS',
+        description: `Updated department: ${department.name}`,
+        resourceId: department._id,
+        resourceModel: 'Department',
+        details: req.body,
+        req
+    });
 
     sendSuccess(res, 200, 'Department updated successfully', department);
 });
@@ -78,11 +105,22 @@ export const deleteDepartment = asyncHandler(async (req, res) => {
         throw new ApiError(409, 'Department cannot be deleted while linked doctors or appointments exist');
     }
 
-    const department = await Department.findByIdAndDelete(req.params.id);
-
+    const department = await Department.findById(req.params.id);
     if (!department) {
         throw new ApiError(404, 'Department not found');
     }
+
+    await Department.findByIdAndDelete(req.params.id);
+
+    await logSystem({
+        user: req.user._id,
+        action: 'DELETE_DEPARTMENT',
+        status: 'WARNING',
+        description: `Deleted department: ${department.name}`,
+        resourceId: req.params.id,
+        resourceModel: 'Department',
+        req
+    });
 
     sendSuccess(res, 200, 'Department deleted successfully');
 });
