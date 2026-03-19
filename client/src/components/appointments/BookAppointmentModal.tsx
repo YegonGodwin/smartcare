@@ -275,7 +275,7 @@ export function BookAppointmentModal({
                       <div className="text-sm text-slate-600 mt-1">{doctor.specialization}</div>
                       <div className="text-sm text-slate-500 mt-1">{doctor.department.name}</div>
                       <div className="text-sm font-medium text-blue-600 mt-2">
-                        Fee: ${doctor.consultationFee}
+                        Fee: Ksh {doctor.consultationFee}
                       </div>
                     </button>
                   ))

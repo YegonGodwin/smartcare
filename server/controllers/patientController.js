@@ -15,6 +15,15 @@ export const listPatients = asyncHandler(async (req, res) => {
         filter._id = req.user.patientProfile?._id || req.user.patientProfile;
     }
 
+    // Doctor specific filtering - Only patients they have had appointments with
+    const doctorId = req.query.doctorId || (req.user?.role === 'doctor' ? (req.user.doctorProfile?._id || req.user.doctorProfile) : null);
+    
+    if (doctorId) {
+        // Find all unique patient IDs from appointments with this doctor
+        const patientIds = await Appointment.distinct('patient', { doctor: doctorId });
+        filter._id = { $in: patientIds };
+    }
+
     if (req.query.status) {
         filter.status = req.query.status;
     }
