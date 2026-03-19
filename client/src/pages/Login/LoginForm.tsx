@@ -17,6 +17,24 @@ export function LoginForm() {
   const [activeRole, setActiveRole] = useState<Role>('patient');
   const [roleError, setRoleError] = useState<string | null>(null);
 
+  const roleOptions: Array<{ value: Role; title: string; description: string }> = [
+    {
+      value: 'patient',
+      title: 'Patient access',
+      description: 'View appointments, prescriptions, and visit notes.',
+    },
+    {
+      value: 'doctor',
+      title: 'Clinician access',
+      description: 'Manage schedules, notes, and patient records.',
+    },
+  ];
+
+  const activeRoleLabel =
+    activeRole === 'admin'
+      ? 'Administrator'
+      : activeRole.charAt(0).toUpperCase() + activeRole.slice(1);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     clearError();
@@ -37,58 +55,70 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="mb-10 text-center lg:text-left">
-        <h2 className="mb-3 text-4xl font-black text-slate-900 tracking-tight">Welcome Back</h2>
-        <p className="text-slate-500 font-medium leading-relaxed">
-          Access your personalized {activeRole === 'admin' ? 'administrative' : activeRole} portal to manage health data securely.
+    <div className="w-full">
+      <div className="mb-10 space-y-4">
+        <p className="text-xs uppercase tracking-[0.35em] text-[#8c4b20] font-semibold">
+          Secure sign-in
         </p>
+        <div>
+          <h2 className="text-4xl text-slate-900 font-semibold">Sign in to your workspace</h2>
+          <p className="text-slate-600 mt-2">
+            Use your assigned email to access protected clinical tools and patient data.
+          </p>
+        </div>
       </div>
 
-      {/* Role Selection - Only Patient & Doctor visible as primary choices */}
-      <div className="flex p-1.5 bg-slate-100 rounded-2xl mb-8 shadow-inner border border-slate-200">
-        <button
-          type="button"
-          onClick={() => {
-            clearError();
-            setRoleError(null);
-            setActiveRole('patient');
-          }}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
-            activeRole === 'patient'
-              ? 'bg-white text-emerald-600 shadow-md ring-1 ring-slate-200'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          Patient Login
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            clearError();
-            setRoleError(null);
-            setActiveRole('doctor');
-          }}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
-            activeRole === 'doctor'
-              ? 'bg-white text-emerald-600 shadow-md ring-1 ring-slate-200'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.673.337a4 4 0 01-2.509.37l-1.489-.186a2 2 0 01-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.673.337a4 4 0 01-2.509.37l-1.489-.186a2 2 0 01-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.673.337a4 4 0 01-2.509.37l-1.489-.186z" />
-          </svg>
-          Doctor Login
-        </button>
+      <div className="space-y-4 mb-8">
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">Choose access</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {roleOptions.map((role) => (
+            <button
+              key={role.value}
+              type="button"
+              aria-pressed={activeRole === role.value}
+              onClick={() => {
+                clearError();
+                setRoleError(null);
+                setActiveRole(role.value);
+              }}
+              className={`rounded-2xl border px-4 py-4 text-left transition-all ${
+                activeRole === role.value
+                  ? 'border-[#c46a2b] bg-white shadow-sm'
+                  : 'border-[#eadfce] bg-white/60 hover:border-[#c46a2b]/40 hover:bg-white'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{role.title}</p>
+                  <p className="text-xs text-slate-500">{role.description}</p>
+                </div>
+                <span
+                  className={`h-3 w-3 rounded-full border ${
+                    activeRole === role.value ? 'border-[#c46a2b] bg-[#c46a2b]' : 'border-slate-300'
+                  }`}
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+        {roleError && (
+          <div
+            className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            role="alert"
+          >
+            {roleError}
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-1.5">
-          <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+        <div className="space-y-2">
+          <label htmlFor="login-email" className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">
+            Work email
+          </label>
           <Input
+            id="login-email"
+            name="email"
             type="email"
             value={email}
             onChange={(e) => {
@@ -96,22 +126,30 @@ export function LoginForm() {
               setRoleError(null);
               setEmail(e.target.value);
             }}
-            placeholder="name@hospital.com"
-            autoComplete="email"
+            placeholder="name@healthcare.org"
+            autoComplete="username"
+            inputMode="email"
             required
-            className="rounded-2xl border-slate-200 focus:ring-emerald-500/20 focus:border-emerald-500 py-3.5 px-4"
+            className="rounded-xl border-[#eadfce] bg-white focus-within:border-[#c46a2b] focus-within:ring-[#c46a2b]/20"
             icon={<MailIcon />}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between ml-1">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Password</label>
-            <a href="#" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-wider">
-              Forgot?
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="login-password" className="text-xs uppercase tracking-[0.3em] text-slate-500 font-semibold">
+              Password
+            </label>
+            <a
+              href="#"
+              className="text-[11px] uppercase tracking-[0.3em] text-slate-500 hover:text-[#c46a2b] transition-colors"
+            >
+              Forgot password
             </a>
           </div>
           <Input
+            id="login-password"
+            name="password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => {
@@ -119,17 +157,17 @@ export function LoginForm() {
               setRoleError(null);
               setPassword(e.target.value);
             }}
-            placeholder="••••••••"
+            placeholder="Enter your password"
             autoComplete="current-password"
             required
-            className="rounded-2xl border-slate-200 focus:ring-emerald-500/20 focus:border-emerald-500 py-3.5 px-4"
+            className="rounded-xl border-[#eadfce] bg-white focus-within:border-[#c46a2b] focus-within:ring-[#c46a2b]/20"
             icon={<KeyIcon />}
             rightElement={
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="p-1 text-slate-300 hover:text-emerald-600 transition-colors mr-2"
-                aria-label={showPassword ? 'Hide' : 'Show'}
+                className="p-1 text-slate-400 hover:text-[#c46a2b] transition-colors mr-2"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
@@ -137,62 +175,67 @@ export function LoginForm() {
           />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Checkbox
-            label="Remember me"
+            label="Remember this device"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="text-slate-600 font-bold"
+            className="text-slate-700"
           />
+          <span className="text-xs text-slate-400">Do not use on shared devices.</span>
         </div>
 
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
             {error}
           </div>
         )}
 
-        {roleError && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {roleError}
-          </div>
-        )}
-
-        <Button 
-          type="submit" 
-          variant="primary" 
-          size="lg" 
-          isLoading={isLoading} 
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.25rem] py-4 text-base font-bold shadow-xl shadow-emerald-600/20 group transition-all"
+        <Button
+          type="submit"
+          variant="secondary"
+          size="lg"
+          isLoading={isLoading}
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl py-4 text-base font-semibold shadow-xl shadow-slate-900/20 group transition-all"
         >
-          <span>Login to {activeRole === 'admin' ? 'Administration' : activeRole.charAt(0).toUpperCase() + activeRole.slice(1)}</span>
-          <svg className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <span>Continue as {activeRoleLabel}</span>
+          <svg
+            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M5 12h14" />
             <path d="m12 5 7 7-7 7" />
           </svg>
         </Button>
       </form>
 
-      <div className="mt-10 pt-10 border-t border-slate-100 flex flex-col items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500 font-medium">New to SmartCare?</span>
-          <Link to="/register" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
-            Create an Account
+      <div className="mt-10 pt-8 border-t border-[#eadfce] flex flex-col items-start gap-4">
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <span>New to SmartCare?</span>
+          <Link to="/register" className="font-semibold text-[#c46a2b] hover:text-[#a95520] transition-colors">
+            Create an account
           </Link>
         </div>
-        
-        {/* Discreet Staff/Admin login link */}
-        <button 
+
+        <button
           onClick={() => {
             clearError();
             setRoleError(null);
             setActiveRole('admin');
           }}
-          className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-emerald-600 ${
-            activeRole === 'admin' ? 'text-emerald-600' : 'text-slate-300'
+          className={`text-[11px] uppercase tracking-[0.35em] transition-all ${
+            activeRole === 'admin' ? 'text-[#c46a2b]' : 'text-slate-300 hover:text-slate-500'
           }`}
         >
-          Staff & Administrator Login
+          Staff and administrator access
         </button>
       </div>
     </div>

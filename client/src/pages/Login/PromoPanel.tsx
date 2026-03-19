@@ -1,59 +1,70 @@
-import { HeartIcon, ShieldIcon, UsersIcon, ActivityIcon } from '@components/layout/icons';
+import { ShieldIcon, UsersIcon, ActivityIcon } from '@components/layout/icons';
 
-const features = [
+const highlights = [
   {
     icon: UsersIcon,
-    title: 'Patient-Centered',
-    description: 'Designed for optimal care',
+    title: 'Role-aware workspaces',
+    description: 'Tailored views for patients, clinicians, and administrators.',
   },
   {
     icon: ShieldIcon,
-    title: 'Secure & Compliant',
-    description: 'HIPAA-ready security',
+    title: 'Security by default',
+    description: 'Least-privilege access with audit-ready activity logs.',
   },
   {
     icon: ActivityIcon,
-    title: 'Real-time Insights',
-    description: 'Live health metrics',
+    title: 'Faster care coordination',
+    description: 'Scheduling, notes, and approvals in a unified timeline.',
   },
 ];
 
+const badges = ['Care teams', 'Operations', 'Compliance'];
+
 export function PromoPanel() {
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 p-12 text-white">
-      {/* Background decoration */}
-      <div className="absolute -top-1/2 -right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+    <section className="login-panel relative overflow-hidden rounded-[2rem] p-8 sm:p-10 text-white">
+      <div className="absolute -top-20 -right-12 h-56 w-56 rounded-full bg-white/10 blur-3xl login-drift" />
+      <div className="absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-[#c46a2b]/20 blur-3xl" />
 
-      <div className="relative z-10 max-w-lg">
-        <div className="inline-flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl mb-7">
-          <HeartIcon />
+      <div className="relative z-10 flex h-full flex-col gap-8">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-white/60">Care operations hub</p>
+          <h1 className="text-4xl leading-tight font-semibold">
+            Coordinate care
+            <br />
+            with confidence.
+          </h1>
+          <p className="text-sm text-white/70 max-w-md">
+            A clean, focused workspace for every role. Authenticate once and move through
+            schedules, records, and approvals without losing context.
+          </p>
         </div>
 
-        <h1 className="text-4xl font-bold tracking-tight leading-tight mb-4">
-          Healthcare Management,
-          <br />
-          System
-        </h1>
-
-        <p className="text-white/80 text-base leading-relaxed mb-10">
-          Experience seamless patient care with our integrated healthcare platform.
-          Where technology meets compassion for better health outcomes.
-        </p>
-
-        <div className="space-y-3">
-          {features.map((feature) => (
+        <div className="grid gap-4">
+          {highlights.map((item) => (
             <div
-              key={feature.title}
-              className="flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/15 transition-colors"
+              key={item.title}
+              className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm"
             >
-              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <feature.icon />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
+                <item.icon />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">{feature.title}</h3>
-                <p className="text-white/70 text-xs">{feature.description}</p>
+                <h3 className="text-sm font-semibold">{item.title}</h3>
+                <p className="text-xs text-white/70">{item.description}</p>
               </div>
             </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <span
+              key={badge}
+              className="rounded-full border border-white/20 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-white/70"
+            >
+              {badge}
+            </span>
           ))}
         </div>
       </div>
